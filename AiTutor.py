@@ -1,24 +1,15 @@
 import openai
-import random
 
-def get_openai_api_key():
-    """
-    Prompt the user to enter their OpenAI API key.
-    """
+def get_api_key():
+    """Prompt the user to enter their OpenAI API key."""
     return input("Enter your OpenAI API key: ")
 
-# Set up OpenAI API key
-openai.api_key = get_openai_api_key()
-
 def generate_questions(subject, grade_level, num_questions):
-    """
-    Generate a list of questions for a specific subject and grade level.
-    """
+    """Generate a list of diagnostic test questions for a specific subject and grade level."""
+    openai.api_key = get_api_key()
     questions = []
     for _ in range(num_questions):
-        prompt = (
-            f"Generate a {subject} question suitable for a grade {grade_level} student."
-        )
+        prompt = f"Generate a {subject} question suitable for a grade {grade_level} student."
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -30,70 +21,71 @@ def generate_questions(subject, grade_level, num_questions):
         questions.append(question)
     return questions
 
-def create_test(grade_level):
-    """
-    Create a test with 20 questions each from Math, Science, and ELA.
-    """
-    subjects = ["Math", "Science", "ELA"]
-    test = {}
+def administer_test(grade_level):
+    """Give the student 20 questions per subject without assistance."""
+    subjects = ["Math", "Science", "English"]
+    test_results = {}
+    
     for subject in subjects:
-        test[subject] = generate_questions(subject, grade_level, 20)
-    return test
+        print(f"\n{subject} Diagnostic Test")
+        test_results[subject] = []
+        questions = generate_questions(subject, grade_level, 20)
+        for i, question in enumerate(questions, 1):
+            print(f"{i}. {question}")
+            answer = input("Your Answer: ")
+            test_results[subject].append((question, answer))
+    
+    return test_results
 
-def evaluate_answers(answers, correct_answers):
-    """
-    Evaluate the student's answers against the correct answers.
-    """
-    score = 0
-    for student_answer, correct_answer in zip(answers, correct_answers):
-        if student_answer.strip().lower() == correct_answer.strip().lower():
-            score += 1
-    return score
+def evaluate_test(test_results):
+    """Analyze test results to identify knowledge gaps."""
+    knowledge_gaps = {}
+    for subject, responses in test_results.items():
+        incorrect_answers = []
+        for question, answer in responses:
+            correct_answer = "Correct answer placeholder"  # Replace with real answer-checking logic
+            if answer.strip().lower() != correct_answer.strip().lower():
+                incorrect_answers.append(question)
+        if incorrect_answers:
+            knowledge_gaps[subject] = incorrect_answers
+    return knowledge_gaps
 
-def adaptive_tutor(subject, grade_level, knowledge_gaps):
-    """
-    Adaptive tutor that teaches based on knowledge gaps.
-    """
-    print(f"Starting adaptive tutoring session for {subject}...")
+def teach_lesson(subject, knowledge_gaps):
+    """Provide a lesson based on identified knowledge gaps."""
+    print(f"\nTeaching {subject}...")
     for topic in knowledge_gaps:
-        print(f"Teaching topic: {topic}")
-        while True:
-            prompt = (
-                f"Generate a {subject} question for a grade {grade_level} student focusing on {topic}."
-            )
+        print(f"\nLesson on: {topic}")
+        explanation = f"Explain {topic} to a {subject} student."
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a tutor explaining concepts."},
+                {"role": "user", "content": explanation},
+            ],
+        )
+        print(response['choices'][0]['message']['content'])
+        input("Type 'r' when ready to move on: ")
+        for _ in range(3):
+            question_prompt = f"Generate a practice question about {topic}."
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a tutor providing adaptive learning."},
-                    {"role": "user", "content": prompt},
+                    {"role": "system", "content": "You are a tutor generating practice questions."},
+                    {"role": "user", "content": question_prompt},
                 ],
             )
             question = response['choices'][0]['message']['content']
             print(f"Question: {question}")
+            answer = input("Your Answer: ")
 
-            student_answer = input("Your Answer: ")
-            correct_answer = "Correct answer placeholder"  # This would be dynamically generated
-            if student_answer.strip().lower() == correct_answer.strip().lower():
-                print("Correct! Moving to the next topic.")
-                break
-            else:
-                print("That's not quite right. Let's try another question.")
+def main():
+    """Run the AI tutor."""
+    grade_level = int(input("Enter your grade level: "))
+    print("\nStarting Diagnostic Test...")
+    test_results = administer_test(grade_level)
+    knowledge_gaps = evaluate_test(test_results)
+    for subject, gaps in knowledge_gaps.items():
+        teach_lesson(subject, gaps)
 
 if __name__ == "__main__":
-    grade_level = int(input("Enter the student's grade level: "))
-    print("Creating a personalized test...")
-    test = create_test(grade_level)
-    
-    for subject, questions in test.items():
-        print(f"\n{subject} Questions:")
-        for i, question in enumerate(questions[:5]):
-            print(f"{i + 1}. {question}")
-    
-    print("\nEvaluating the test...")
-    student_answers = ["placeholder answer" for _ in range(60)]  # Simulated answers
-    correct_answers = ["placeholder answer" for _ in range(60)]  # Placeholder correct answers
-    score = evaluate_answers(student_answers, correct_answers)
-    print(f"Student Score: {score}/60")
-    
-    knowledge_gaps = ["Fractions", "Photosynthesis"]  # Example topics
-    adaptive_tutor("Math", grade_level, knowledge_gaps)
+    main()
