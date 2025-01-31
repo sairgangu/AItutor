@@ -1,9 +1,14 @@
 import openai
 import random
 
+def get_openai_api_key():
+    """
+    Prompt the user to enter their OpenAI API key.
+    """
+    return input("Enter your OpenAI API key: ")
 
-
-# openai.api_key = 
+# Set up OpenAI API key
+openai.api_key = get_openai_api_key()
 
 def generate_questions(subject, grade_level, num_questions):
     """
