@@ -1,12 +1,10 @@
 import openai
 
-def get_api_key():
-    """Prompt the user to enter their OpenAI API key."""
-    return input("Enter your OpenAI API key: ")
 
 def generate_questions(subject, grade_level, num_questions):
     """Generate a list of diagnostic test questions for a specific subject and grade level."""
-    openai.api_key = get_api_key()
+    openai.api_key = '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'
+
     questions = []
     for _ in range(num_questions):
         prompt = f"Generate a {subject} question suitable for a grade {grade_level} student."
